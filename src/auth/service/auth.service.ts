@@ -74,6 +74,7 @@ export class AuthService {
       let fullUrl = process.env.MAIN_HOST + '/country/country1?countryId=' + user.coutryId;
       console.log("fullUrl", fullUrl);
       const country = await (await this.httpService.get(fullUrl).toPromise()).data;
+      console.log("countryData", country);
       let sec = new Array();
       if(country.countrysector.length>0){
         for await (let s of country.countrysector) {
