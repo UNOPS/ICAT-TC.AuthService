@@ -49,7 +49,7 @@ export class AuthController {
             institutionId: user.insId,
             countryId: user.coutryId
         }
-        this.log(_body)
+        // this.log(_body)
 
         return this.authService.login(req.user);
     }
@@ -158,7 +158,7 @@ export class AuthController {
 
     log(body: any) {
         try {
-            // this.httpService.post(this.auditlogURL, body).subscribe(rr => { })
+            this.httpService.post(this.auditlogURL, body).subscribe(rr => { })
         } catch (err) {
             console.log("audit arror",err)
             throw new InternalServerErrorException(err);
