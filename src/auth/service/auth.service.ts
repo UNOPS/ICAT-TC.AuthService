@@ -11,7 +11,6 @@ import { jwtConstants } from '../constants';
 import { RefreshReqRes } from '../dto/refreshReqRes.dto';
 import * as bcript from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { error } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -115,6 +114,7 @@ export class AuthService {
       }
     }
     catch (error) {
+      console.log(error)
       throw new InternalServerErrorException(error);
     }
 
