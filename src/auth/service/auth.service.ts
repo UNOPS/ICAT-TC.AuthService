@@ -11,6 +11,7 @@ import { jwtConstants } from '../constants';
 import { RefreshReqRes } from '../dto/refreshReqRes.dto';
 import * as bcript from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { error } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -57,9 +58,10 @@ export class AuthService {
   }
 
   async login(loginProfile: ValidatedProfileDto): Promise<LoginRes> {
+
+
     try {
       const user = await this.loginProfileService.findOne({ where: { userName: loginProfile.username } });
-      console.log("userdata", user)
       let conID = 0;
       if (!user.coutryId) {
         user.coutryId = 1;
@@ -69,19 +71,20 @@ export class AuthService {
       else {
         conID = user.coutryId
       }
-      console.log("countryID", conID);
 
-      let fullUrl = process.env.MAIN_HOST + '/country/country1?countryId=' + user.coutryId;
-      console.log("fullUrl", fullUrl);
-      const country = await (await this.httpService.get(fullUrl).toPromise()).data;
-      console.log("countryData", country);
+
+
+      let fullUrl =process.env.MAIN_HOST+ '/country/country1?countryId=' + user.coutryId;
       let sec = new Array();
-      if(country.countrysector.length>0){
+      const country = await (await this.httpService.get(fullUrl).toPromise()).data;
+
+      if (country.countrysector.length > 0) {
         for await (let s of country.countrysector) {
           sec.push(s.id)
         }
       }
-     
+
+
       const payload = {
         username: loginProfile.username,
         sub: loginProfile.id,
@@ -111,9 +114,8 @@ export class AuthService {
         };
       }
     }
-    catch (err) {
-      console.log(err);
-      throw new InternalServerErrorException(err);
+    catch (error) {
+      throw new InternalServerErrorException(error);
     }
 
 
