@@ -49,7 +49,7 @@ export class AuthController {
             institutionId: user.insId,
             countryId: user.coutryId
         }
-        // this.log(_body)
+        this.log(_body)
 
         return this.authService.login(req.user);
     }
