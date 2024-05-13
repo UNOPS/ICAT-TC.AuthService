@@ -1,4 +1,4 @@
-import { Controller, Request, Post, UseGuards, Body, Query } from '@nestjs/common';
+import { Controller, Request, Post, UseGuards, Body, Query, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { AuthCredentialDto } from '../dto/auth.credential.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -161,6 +161,7 @@ export class AuthController {
             this.httpService.post(this.auditlogURL, body).subscribe(rr => { })
         } catch (err) {
             console.log("audit arror",err)
+            throw new InternalServerErrorException(err);
         }
     }
 
