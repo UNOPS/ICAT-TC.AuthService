@@ -160,7 +160,6 @@ export class AuthController {
         try {
             this.httpService.post(this.auditlogURL, body).subscribe(rr => { })
         } catch (err) {
-            console.log("audit arror",err)
             throw new InternalServerErrorException(err);
         }
     }

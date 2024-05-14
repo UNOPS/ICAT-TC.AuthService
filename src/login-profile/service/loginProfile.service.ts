@@ -81,10 +81,12 @@ export class LoginProfileService extends TypeOrmCrudService<LoginProfile>{
   }
 
   async updateLoginProfile(dto: LoginProfile): Promise<LoginProfile>{
+   
     if(dto.password){
       const lp = await this.repo.findOne({where:{id:dto.id}});
       dto.password = await this.hashPassword(dto.password, lp.salt);
     }
+    
     return (await this.repo.save( dto));
   }
   async addLoginProfile(createLoginProfileDto: LoginProfile): Promise<LoginProfile>{

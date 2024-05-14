@@ -114,7 +114,6 @@ export class AuthService {
       }
     }
     catch (error) {
-      console.log(error)
       throw new InternalServerErrorException(error);
     }
 
@@ -130,6 +129,7 @@ export class AuthService {
         profile.profileState = ProfileStatus.Resetting;
         profile.otp = this.getOTP(1000, 9999);
         profile.otpExpireAt = new Date(new Date().getTime() + 5 * 60000);
+        this.loginProfileService.update(profile.id,profile)
 
         let emailTemplate = ' <p>Hi ' + firstName + ',</p>' +
           '<p>' +
