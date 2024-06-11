@@ -138,7 +138,7 @@ export class LoginProfileController implements CrudController<LoginProfile> {
 
       dto.id = lp.id;
       dto.ins = response.data;
-      dto.userType=ut
+      dto.userType=ut;
       const user = await axios.post(MainMethURL + '/users/syncuser', dto);
     }
 
