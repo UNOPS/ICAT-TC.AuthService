@@ -34,7 +34,7 @@ export class EmailConfirmationService {
     '<br/><br/> If you did not request this confirmation, please ignore this email.'
     +
     '<br/><br/>Best regards,' +
-    '<br/>Software support team';;
+    '<br/>Software support team';
     return this.emailService.send(
       email,
       'Confirm your email address',
@@ -97,16 +97,16 @@ export class EmailConfirmationService {
 
       var template =
       'Dear ' + user.firstName + ' ' + user.lastName + ","+
-      ' <br/><br/>Your username is :' + email +
-      ' <br/> your code is : ' +  newPassword +
-      ' <br/><br/>To reset your password, please visit the following URL' + ' <a href="' + url + '">' + 'Reset Password.' + '</a>' +
+      ' <br/><br/>Your username :' + email +
+      ' <br/> Your code : ' +  newPassword +
+      ' <br/><br/>To reset your password, please visit the following link : ' + ' <a href="' + url + '">' + 'Reset password.' + '</a>' +
       '<br/>' +
       '<br/>Best regards,' +
       '<br/>Software support team';
 
       this.emailService.send(
         email,
-        'Your credentials for TC-TOOL system',
+        'Your credentials for TC toolkit',
         template,
       );
       return `<!DOCTYPE html>
