@@ -6,26 +6,38 @@ import { EmailService } from 'src/shared/email.service';
 import { LoginProfileService } from './loginProfile.service';
 const { v4: uuidv4 } = require('uuid');
 import * as bcript from 'bcrypt';
+import { HttpService } from '@nestjs/axios';
 @Injectable()
 export class EmailConfirmationService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private httpService: HttpService,
     private readonly loginProfileService: LoginProfileService,
   ) { }
 
-  public sendVerificationLink(email: string) {
+  public async sendVerificationLink(email: string) {
     const payload: VerificationTokenPayload = { email };
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
       expiresIn: process.env.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME,
     });
 
+    let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
+      const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+
+
     const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
-    const text = `Welcome to the application. To confirm the email address please, <a href="${url}">click here</a>`;
+    const text = 
+    'Dear ' + user.firstName + ' ' + user.lastName +
+    `Welcome to TC toolkit! To confirm your email address, <a href="${url}">click here</a>`+
+    '<br/><br/> If you did not request this confirmation, please ignore this email.'
+    +
+    '<br/>Best regards' +
+    '<br/>Software support team';;
     return this.emailService.send(
       email,
-      'Email confirmation',
+      'Confirm your email address',
       text,
     )
   }
@@ -47,7 +59,7 @@ export class EmailConfirmationService {
     }
   }
   public async confirmEmail(email: string) {
-   
+    
     const user = await this.loginProfileService.getByEmail(email);
     if (user.isEmailConfirmed) {
       let url =process.env.WEB_SERVER_LOGIN; 
@@ -77,16 +89,17 @@ export class EmailConfirmationService {
       let newPassword = ('' + newUUID).substr(0, 6);
       let sal = salt.toString();
       let password =newPassword;
+      let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
+      const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+
       password = await this.loginProfileService.hashPassword(password, salt);
       await this.loginProfileService.markEmailAsConfirmed(email,sal, password);
 
       var template =
-      'Dear ' +
-      ' <br/>Your username is ' +
-      email +
-      ' <br/> your code is : ' +
-      newPassword +
-      ' <br/>System Reset password url is' + ' <a href="' + url + '">' + url + '</a>' +
+      'Dear ' + user.firstName + ' ' + user.lastName +
+      ' <br/><br/>Your username is ' + email +
+      ' <br/> your code is : ' +  newPassword +
+      ' <br/><br/>To reset your password, please visit the following URL' + ' <a href="' + url + '">' + 'Reset Password.' + '</a>' +
       '<br/>' +
       '<br/>Best regards' +
       '<br/>Software support team';
