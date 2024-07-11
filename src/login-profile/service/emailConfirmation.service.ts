@@ -96,7 +96,7 @@ export class EmailConfirmationService {
       await this.loginProfileService.markEmailAsConfirmed(email,sal, password);
 
       var template =
-      'Dear ' + user.firstName + ' ' + user.lastName +
+      'Dear ' + user.firstName + ' ' + user.lastName + ","+
       ' <br/><br/>Your username is ' + email +
       ' <br/> your code is : ' +  newPassword +
       ' <br/><br/>To reset your password, please visit the following URL' + ' <a href="' + url + '">' + 'Reset Password.' + '</a>' +
