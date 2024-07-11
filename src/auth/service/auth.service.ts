@@ -131,10 +131,10 @@ export class AuthService {
         profile.otpExpireAt = new Date(new Date().getTime() + 5 * 60000);
         this.loginProfileService.update(profile.id,profile)
 
-        let emailTemplate = ' <p>Hi ' + firstName + ',</p>' +
+        let emailTemplate = ' <p>Dear ' + firstName + ',</p>' +
           '<p>' +
           'You recently requested to reset the password for your account in TC toolkit. Here is your OTP : ' + profile.otp + '.' +
-          '<br/><br/>If you did not request a password reset, please ignore this email ' +
+          '<br/><br/>If you did not request a password reset, please ignore this email. ' +
           '</p>' +
           '<p> Best regards,</p>' +
           '<p>Software support team</p>';
@@ -201,7 +201,7 @@ export class AuthService {
         ' <br/><br/>Your username is : ' + username +
         '<br/> your login password is : ' + pass +
 
-        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'
+        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'+
         '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(
