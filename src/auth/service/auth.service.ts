@@ -193,8 +193,8 @@ export class AuthService {
       await this.loginProfileService.updateLoginProfile(profile);
       let url = `${this.configService.get('WEB_SERVER_LOGIN')}`;
       var template =
-        'Dear ' +
-        ' <br/>Your username is ' +
+        'Dear ' + 
+         ' <br/>Your username is ' +
         username +
         '<br/> your login password is : ' +
         pass +
@@ -202,7 +202,7 @@ export class AuthService {
 
       this.emailService.send(
         username,
-        'Your credentials for TC-TOOL system',
+        'Your credentials for TC toolkit',
         template,
       );
       return true;
