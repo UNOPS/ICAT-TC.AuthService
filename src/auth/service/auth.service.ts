@@ -136,7 +136,7 @@ export class AuthService {
           'You recently requested to reset the password for your account in TC toolkit. Here is your OTP : ' + profile.otp + '.' +
           '<br/><br/>If you did not request a password reset, please ignore this email. ' +
           '</p>' +
-          '<p> Best regards,</p>' +
+          '<p> Best regards,<br/>' +
           '<p>Software support team</p>';
 
         this.emailService.send(userName, 'OTP for password reset', emailTemplate);
@@ -198,10 +198,10 @@ export class AuthService {
       let url = `${this.configService.get('WEB_SERVER_LOGIN')}`;
       var template =
         'Dear ' + user.firstName + " " + user.lastName + ","+
-        ' <br/><br/>Your username is : ' + username +
-        '<br/> your login password is : ' + pass +
+        ' <br/><br/>Your username  : ' + username +
+        '<br/> Your login password : ' + pass +
 
-        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'+
+        ' <br/><br/>To log in to the system, please visit the following link : ' + ' <a href="' + url + '">' + 'System login.' + '</a>'+
         '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(
