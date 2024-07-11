@@ -201,7 +201,7 @@ export class AuthService {
         ' <br/><br/>Your username is : ' + username +
         '<br/> your login password is : ' + pass +
 
-        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'
+        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'+
         '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(

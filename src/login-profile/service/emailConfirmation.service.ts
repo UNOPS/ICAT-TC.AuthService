@@ -29,11 +29,11 @@ export class EmailConfirmationService {
 
     const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
     const text = 
-    'Dear user'  +
+    'Dear user,'  +
     `<br><br>Welcome to TC toolkit! To confirm your email address, <a href="${url}">click here</a>`+
     '<br/><br/> If you did not request this confirmation, please ignore this email.'
     +
-    '<br/><br/>Best regards' +
+    '<br/><br/>Best regards,' +
     '<br/>Software support team';;
     return this.emailService.send(
       email,
@@ -101,7 +101,7 @@ export class EmailConfirmationService {
       ' <br/> your code is : ' +  newPassword +
       ' <br/><br/>To reset your password, please visit the following URL' + ' <a href="' + url + '">' + 'Reset Password.' + '</a>' +
       '<br/>' +
-      '<br/>Best regards' +
+      '<br/>Best regards,' +
       '<br/>Software support team';
 
       this.emailService.send(
