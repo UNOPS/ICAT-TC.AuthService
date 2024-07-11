@@ -6,6 +6,8 @@ import { EmailService } from 'src/shared/email.service';
 import { LoginProfileService } from './loginProfile.service';
 const { v4: uuidv4 } = require('uuid');
 import * as bcript from 'bcrypt';
+import axios from 'axios';
+
 @Injectable()
 export class EmailConfirmationService {
   constructor(
@@ -14,18 +16,27 @@ export class EmailConfirmationService {
     private readonly loginProfileService: LoginProfileService,
   ) { }
 
-  public sendVerificationLink(email: string) {
+  public async sendVerificationLink(email: string) {
     const payload: VerificationTokenPayload = { email };
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
       expiresIn: process.env.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME,
     });
-
+    const MainMethURL =  process.env.MAIN_SERVICE_URL ;
+    let user:any = await axios.get(MainMethURL + '/findUserByEmail/'+email);
+    console.log(user)
     const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
-    const text = `Welcome to the application. To confirm the email address please, <a href="${url}">click here</a>`;
+    const text = 
+    'Dear ' + user.firstName + " " + user.lastName + ","+
+    '<br/><br/> Welcome to TC toolkit! To confirm your email address, please click here., <a href="${url}">click here</a>'
+    +'  <br/><br/> If you did not request this confirmation, please ignore this email.'
+    +'<br/>' +
+          '<br/>Best regards,' +
+          '<br/>Software support team';
+    ;
     return this.emailService.send(
       email,
-      'Email confirmation ',
+      'Confirm your email address',
       text,
     )
   }
