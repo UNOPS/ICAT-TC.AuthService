@@ -29,7 +29,7 @@ export class EmailConfirmationService {
 
     const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
     const text = 
-    'Dear ' + user.firstName + ' ' + user.lastName +
+    'Dear user'  +
     `<br><br>Welcome to TC toolkit! To confirm your email address, <a href="${url}">click here</a>`+
     '<br/><br/> If you did not request this confirmation, please ignore this email.'
     +
