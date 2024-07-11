@@ -25,7 +25,7 @@ export class EmailConfirmationService {
     const text = `Welcome to the application. To confirm the email address please, <a href="${url}">click here</a>`;
     return this.emailService.send(
       email,
-      'Email confirmation',
+      'Email confirmation ',
       text,
     )
   }
