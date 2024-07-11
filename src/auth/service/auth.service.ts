@@ -133,11 +133,11 @@ export class AuthService {
 
         let emailTemplate = ' <p>Hi ' + firstName + ',</p>' +
           '<p>' +
-          'You recently requested to reset the password for your ICAT TC tool account. Here is your OTP ' + profile.otp + '.' +
-          '<b>If you did not request a password reset, please ignore this email.</b> ' +
+          'You recently requested to reset the password for your account in TC toolkit. Here is your OTP : ' + profile.otp + '.' +
+          '<br/><br/>If you did not request a password reset, please ignore this email ' +
           '</p>' +
-          '<p>Thank you, </p>' +
-          '<p>ICAT TC Toolkit</p>';
+          '<p> Best regards,</p>' +
+          '<p>Software support team</p>';
 
         this.emailService.send(userName, 'OTP for password reset', emailTemplate);
         return true;
@@ -186,6 +186,10 @@ export class AuthService {
   async resetOwn(username: string, pass: string, code: string) {
     const profile = await this.loginProfileService.getByUserName(username);
     const hashPassword = await bcript.hash(code, profile.salt);
+    let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + username;
+
+    const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+    console.log(user)
 
     if (hashPassword == profile.password) {
       profile.password = pass;
@@ -193,16 +197,16 @@ export class AuthService {
       await this.loginProfileService.updateLoginProfile(profile);
       let url = `${this.configService.get('WEB_SERVER_LOGIN')}`;
       var template =
-        'Dear ' +
-        ' <br/>Your username is ' +
-        username +
-        '<br/> your login password is : ' +
-        pass +
-        ' <br/>System login url is' + ' <a href="' + url + '">' + url + '</a>';
+        'Dear ' + user.firstName + " " + user.lastName + ","+
+        ' <br/><br/>Your username is : ' + username +
+        '<br/> your login password is : ' + pass +
+
+        ' <br/><br/>To log in to the system, please visit the following URL: ' + ' <a href="' + url + '">' + 'System Login.' + '</a>'
+        '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(
         username,
-        'Your credentials for TC-TOOL system',
+        'Your credentials for TC toolkit',
         template,
       );
       return true;

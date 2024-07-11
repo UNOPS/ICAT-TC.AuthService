@@ -14,6 +14,7 @@ import { EmailService } from 'src/shared/email.service';
 import { EmailConfirmationService } from './service/emailConfirmation.service';
 import { EmailConfirmationController } from './controller/emailConfirmation.controller';
 import { ConfigModule } from '@nestjs/config';
+import { HttpModule, HttpService } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -24,10 +25,11 @@ import { ConfigModule } from '@nestjs/config';
       LoginProfile,
       UserType
     ]),    
+    HttpModule,
     forwardRef(() => AuthModule),
     ManagementModule
   ],
-  providers: [LoginProfileService, RoleService,JwtService,ConfigService,EmailService,EmailConfirmationService],
+  providers: [LoginProfileService, RoleService,JwtService,ConfigService,EmailService,EmailConfirmationService,HttpModule],
   exports: [LoginProfileService, RoleService],
   controllers: [RoleController, LoginProfileController,EmailConfirmationController]
 })
