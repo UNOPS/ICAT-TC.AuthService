@@ -45,10 +45,6 @@ import { ManagementModule } from './management/management.module';
         host: process.env.EMAIL_HOST,
         port: 587,
         secure: false,
-        auth: {
-          user: process.env.EMAIL,
-          pass: process.env.EMAIL_PASSWORD,
-        },
       },
       defaults: {
         from: process.env.EMAIL,
