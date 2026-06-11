@@ -43,8 +43,13 @@ import { ManagementModule } from './management/management.module';
     MailerModule.forRoot({
       transport: {
         host: process.env.EMAIL_HOST,
+        name: 'unops.org',
+        pool: true,
         port: 587,
         secure: false,
+        tls: {
+          rejectUnauthorized: false,
+        },
       },
       defaults: {
         from: process.env.EMAIL,
