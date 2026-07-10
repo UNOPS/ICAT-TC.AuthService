@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +14,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { AuthModule } from './auth/auth.module';
 import { LoginProfileModule } from './login-profile/login-profile.module';
 import { ManagementModule } from './management/management.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { AppThrottlerGuard } from './auth/guards/app-throttler.guard';
+import { defaultThrottle } from './config/throttle.config';
 
 @Module({
   
@@ -19,6 +24,7 @@ import { ManagementModule } from './management/management.module';
     ConfigModule.forRoot({
       isGlobal: true,  
     }),
+    ThrottlerModule.forRoot([defaultThrottle]),
     TypeOrmModule.forRoot({
       type: 'mysql',
       // host: process.env.DATABASE_HOST,
@@ -65,6 +71,10 @@ import { ManagementModule } from './management/management.module';
   controllers: [
     AppController,
   ],
-  providers: [AppService,],
+  providers: [
+    { provide: APP_GUARD, useClass: AppThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    AppService,
+  ],
 })
 export class AppModule { }

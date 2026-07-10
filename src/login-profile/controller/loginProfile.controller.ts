@@ -1,4 +1,5 @@
-import { Controller, Request, Post, Get, Body, Patch, InternalServerErrorException, Delete, Query, HttpException, HttpStatus, Param } from '@nestjs/common';
+import { Controller, Request, Post, Get, Body, Patch, InternalServerErrorException, Delete, Query, HttpException, HttpStatus, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Crud, CrudController, CrudRequest, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoginProfile } from '../entities/loginProfile.entity';
 import { LoginProfileService } from '../service/loginProfile.service';
@@ -9,6 +10,13 @@ import { Repository } from 'typeorm';
 import { EmailConfirmationService } from '../service/emailConfirmation.service';
 import axios from 'axios';
 import { UserType } from '../entities/role.entity';
+import { Public } from 'src/auth/decorators/public.decorator';
+import { getServiceAuthHeaders } from 'src/auth/utils/api-key.util';
+import { ProductionDisabledGuard } from 'src/auth/guards/production-disabled.guard';
+import {
+  authThrottle,
+  strictThrottle,
+} from 'src/config/throttle.config';
 
 
 
@@ -40,6 +48,7 @@ export class LoginProfileController implements CrudController<LoginProfile> {
     return this;
   }
 
+  @UseGuards(ProductionDisabledGuard)
   @Post('seed')
   async seed() {
     return await this.service.seed();
@@ -90,6 +99,8 @@ export class LoginProfileController implements CrudController<LoginProfile> {
   }
 
 
+  @Public()
+  @Throttle(strictThrottle)
   @Post('createuser')
   async create(
     @Body() createLoginProfileDto: LoginProfile): Promise<LoginProfile> {
@@ -117,13 +128,17 @@ export class LoginProfileController implements CrudController<LoginProfile> {
       oldUser.status = dto.status;
       if (oldUser.coutryId == dto.country.id && oldUser.userType.id == 1) {
         this.userRepository.save(oldUser);
-        const user = await axios.post(MainMethURL + '/users/syncuser', dto);
+        const user = await axios.post(MainMethURL + '/users/syncuser', dto, {
+          headers: getServiceAuthHeaders(),
+        });
       }
     }
     else {
       let ut = new UserType();
       ut.id = 1
-      const response = await axios.post(MainMethURL + '/institution/syncins', dto);
+      const response = await axios.post(MainMethURL + '/institution/syncins', dto, {
+        headers: getServiceAuthHeaders(),
+      });
       let data = new LoginProfile();
       data.id = dto.uniqueIdentification;
       data.userName = dto.username;
@@ -139,7 +154,9 @@ export class LoginProfileController implements CrudController<LoginProfile> {
       dto.id = lp.id;
       dto.ins = response.data;
       dto.userType=ut;
-      const user = await axios.post(MainMethURL + '/users/syncuser', dto);
+      const user = await axios.post(MainMethURL + '/users/syncuser', dto, {
+        headers: getServiceAuthHeaders(),
+      });
     }
 
 
@@ -186,6 +203,8 @@ export class LoginProfileController implements CrudController<LoginProfile> {
     }
   }
 
+  @Public()
+  @Throttle(authThrottle)
   @Get('isUserAvailable/:userName')
   async isUserAvailable(@Param('userName') userName: string): Promise<boolean> {
     return await this.service.isUserAvailable(userName);

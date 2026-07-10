@@ -1,8 +1,15 @@
 import { Controller, Request, Post, UseGuards, Body, Query, InternalServerErrorException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../service/auth.service';
 import { AuthCredentialDto } from '../dto/auth.credential.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
+import { Public } from '../decorators/public.decorator';
+import { getServiceAuthHeaders } from '../utils/api-key.util';
+import {
+  authThrottle,
+  strictThrottle,
+} from 'src/config/throttle.config';
 import { ValidatedProfileDto } from 'src/shared/dto/validatedProfile.credential.dto';
 import { LoginRes } from 'src/shared/dto/loginRes.dto';
 import { RefreshReqRes } from '../dto/refreshReqRes.dto';
@@ -24,6 +31,8 @@ export class AuthController {
     ) { }
 
 
+    @Public()
+    @Throttle(authThrottle)
     @UseGuards(LocalAuthGuard)
     @Post('login')
     @ApiCreatedResponse({type: LoginRes})
@@ -62,6 +71,8 @@ export class AuthController {
     }
 
     
+    @Public()
+    @Throttle(strictThrottle)
     @Post('forgot-password')
     @ApiCreatedResponse({ type: LoginRes })
     async forgotPassword(
@@ -89,6 +100,8 @@ export class AuthController {
         }
     }
 
+    @Public()
+    @Throttle(strictThrottle)
     @Post('check-otp')
     @ApiCreatedResponse({type: LoginRes})
     async submitOTP(@Query('userName') userName: string, @Query('otp') otp: number): Promise<ResetRes>{
@@ -110,6 +123,8 @@ export class AuthController {
             return res;
         }
     }
+    @Public()
+    @Throttle(strictThrottle)
     @Post('reset-password')
     @ApiCreatedResponse({type: LoginRes})
     async resetPassword(@Body() body: AuthCredentialDto): Promise<ResetRes>{
@@ -133,6 +148,8 @@ export class AuthController {
     }
 
 
+    @Public()
+    @Throttle(strictThrottle)
     @Post('reset-own-password')
     @ApiCreatedResponse({type: ResetRes})
     async resetOWnPassword(@Body() body: AuthCredentialDto): Promise<ResetRes>{
@@ -158,7 +175,9 @@ export class AuthController {
 
     log(body: any) {
         try {
-            this.httpService.post(this.auditlogURL, body).subscribe(rr => { })
+            this.httpService.post(this.auditlogURL, body, {
+                headers: getServiceAuthHeaders(),
+            }).subscribe(rr => { })
         } catch (err) {
             throw new InternalServerErrorException(err);
         }

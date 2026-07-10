@@ -1,5 +1,8 @@
-import { Controller, Get, InternalServerErrorException, Post } from '@nestjs/common';
+import { Controller, Get, InternalServerErrorException, Post, UseGuards } from '@nestjs/common';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { AppService } from './app.service';
+import { Public } from './auth/decorators/public.decorator';
+import { ProductionDisabledGuard } from './auth/guards/production-disabled.guard';
 import { AuthService } from './auth/service/auth.service';
 import { LoginProfileService } from './login-profile/service/loginProfile.service';
 import { RoleService } from './login-profile/service/role.service';
@@ -20,6 +23,7 @@ export class AppController {
     ) {}
 
 
+  @UseGuards(ProductionDisabledGuard)
   @Post('seed-all')
   async seedAll() {
     try{
@@ -61,6 +65,8 @@ export class AppController {
     await this.userService.initMasterAdmin(u, token);
   }
 
+  @Public()
+  @SkipThrottle()
   @Get()
   getHello(): string {
     return this.appService.getHello();
