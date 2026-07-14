@@ -11,6 +11,7 @@ import { jwtConstants } from '../constants';
 import { RefreshReqRes } from '../dto/refreshReqRes.dto';
 import * as bcript from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { getServiceAuthHeaders } from 'src/auth/utils/api-key.util';
 
 @Injectable()
 export class AuthService {
@@ -75,7 +76,7 @@ export class AuthService {
 
       let fullUrl =process.env.MAIN_HOST+ '/country/country1?countryId=' + user.coutryId;
       let sec = new Array();
-      const country = await (await this.httpService.get(fullUrl).toPromise()).data;
+      const country = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
 
       if (country.countrysector.length > 0) {
         for await (let s of country.countrysector) {
@@ -188,7 +189,7 @@ export class AuthService {
     const hashPassword = await bcript.hash(code, profile.salt);
     let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + username;
 
-    const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+    const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
     console.log(user)
 
     if (hashPassword == profile.password) {

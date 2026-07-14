@@ -7,6 +7,7 @@ import { LoginProfileService } from './loginProfile.service';
 const { v4: uuidv4 } = require('uuid');
 import * as bcript from 'bcrypt';
 import { HttpService } from '@nestjs/axios';
+import { getServiceAuthHeaders } from 'src/auth/utils/api-key.util';
 @Injectable()
 export class EmailConfirmationService {
   constructor(
@@ -24,7 +25,7 @@ export class EmailConfirmationService {
     });
 
     let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
-      const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+      const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
 
 
     const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
@@ -90,7 +91,7 @@ export class EmailConfirmationService {
       let sal = salt.toString();
       let password =newPassword;
       let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
-      const user = await (await this.httpService.get(fullUrl).toPromise()).data;
+      const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
 
       password = await this.loginProfileService.hashPassword(password, salt);
       await this.loginProfileService.markEmailAsConfirmed(email,sal, password);
