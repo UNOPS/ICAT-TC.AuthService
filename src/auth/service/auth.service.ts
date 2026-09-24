@@ -74,7 +74,7 @@ export class AuthService {
 
 
 
-      let fullUrl =process.env.MAIN_HOST+ '/country/country1?countryId=' + user.coutryId;
+      let fullUrl = process.env.MAIN_HOST + '/country/country1?countryId=' + user.coutryId;
       let sec = new Array();
       const country = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
 
@@ -126,11 +126,12 @@ export class AuthService {
     try {
 
       const profile = await this.loginProfileService.getByUserName(userName);
-      if ((profile.profileState === ProfileStatus.Active || profile.profileState === ProfileStatus.Resetting) && profile.status === RecordStatus.Active) {
+      const canReset = [ProfileStatus.Active, ProfileStatus.Resetting, ProfileStatus.OTPValidated].includes(profile.profileState);
+      if (canReset && profile.status === RecordStatus.Active) {
         profile.profileState = ProfileStatus.Resetting;
         profile.otp = this.getOTP(1000, 9999);
         profile.otpExpireAt = new Date(new Date().getTime() + 5 * 60000);
-        this.loginProfileService.update(profile.id,profile)
+        this.loginProfileService.update(profile.id, profile)
 
         let emailTemplate = ' <p>Dear ' + firstName + ',</p>' +
           '<p>' +
@@ -187,7 +188,7 @@ export class AuthService {
   async resetOwn(username: string, pass: string, code: string) {
     const profile = await this.loginProfileService.getByUserName(username);
     const hashPassword = await bcript.hash(code, profile.salt);
-    let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + username;
+    let fullUrl = process.env.MAIN_HOST + '/users/findUserByEmail/' + username;
 
     const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
     console.log(user)
@@ -198,11 +199,11 @@ export class AuthService {
       await this.loginProfileService.updateLoginProfile(profile);
       let url = `${this.configService.get('WEB_SERVER_LOGIN')}`;
       var template =
-        'Dear ' + user.firstName + " " + user.lastName + ","+
+        'Dear ' + user.firstName + " " + user.lastName + "," +
         ' <br/><br/>Your username  : ' + username +
         '<br/> Your login password : ' + pass +
 
-        ' <br/><br/>To log in to the system, please visit the following link : ' + ' <a href="' + url + '">' + 'System login.' + '</a>'+
+        ' <br/><br/>To log in to the system, please visit the following link : ' + ' <a href="' + url + '">' + 'System login.' + '</a>' +
         '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(
