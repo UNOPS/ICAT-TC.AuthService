@@ -13,6 +13,8 @@ import { UserType } from '../entities/role.entity';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { getServiceAuthHeaders } from 'src/auth/utils/api-key.util';
 import { ProductionDisabledGuard } from 'src/auth/guards/production-disabled.guard';
+import { ServiceAuth } from 'src/auth/decorators/service-auth.decorator';
+import { ServiceOnlyGuard } from 'src/auth/guards/service-only.guard';
 import {
   authThrottle,
   strictThrottle,
@@ -79,20 +81,20 @@ export class LoginProfileController implements CrudController<LoginProfile> {
   async updateStatus(@Query('role') id: string) {
     try {
       const lp = await this.service.findOne({ where: { id: id } })
-      
-      if(lp.status==0){
-        lp.status =-10;
-        this.service.update(lp.id,lp);
+
+      if (lp.status == 0) {
+        lp.status = -10;
+        this.service.update(lp.id, lp);
         return lp;
       }
-      if(lp.status==-10){
-        lp.status =0;
-        this.service.update(lp.id,lp);
+      if (lp.status == -10) {
+        lp.status = 0;
+        this.service.update(lp.id, lp);
         return lp;
       }
-      
-      
-     
+
+
+
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
@@ -110,30 +112,40 @@ export class LoginProfileController implements CrudController<LoginProfile> {
         throw new HttpException("Email is already taken!!", HttpStatus.BAD_REQUEST);
       }
       const lp = await this.service.addLoginProfile(createLoginProfileDto);
-      let t=await this.emailConfirmationService.sendVerificationLink(createLoginProfileDto.userName);
+      let t = await this.emailConfirmationService.sendVerificationLink(createLoginProfileDto.userName);
       return lp;
     } catch (err) {
-      throw new HttpException("Email is already taken!!", HttpStatus.BAD_REQUEST);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException("Could not create the login for this email");
     }
   }
 
+  @ServiceAuth()
+  @UseGuards(ServiceOnlyGuard)
   @Post('syncuser')
   async syncCountry(
     @Body() dto: any,
   ): Promise<any> {
-    const MainMethURL =  process.env.MAIN_SERVICE_URL ;
-    const isEmailTaken = await this.service.isEmailTaken(dto.username);
-    if (isEmailTaken) {
-      let oldUser = await this.userRepository.findOne({ where: { userName: dto.username } })
-      oldUser.status = dto.status;
-      if (oldUser.coutryId == dto.country.id && oldUser.userType.id == 1) {
-        this.userRepository.save(oldUser);
-        const user = await axios.post(MainMethURL + '/users/syncuser', dto, {
-          headers: getServiceAuthHeaders(),
-        });
+    const MainMethURL = process.env.MAIN_SERVICE_URL;
+    try {
+      const isEmailTaken = await this.service.isEmailTaken(dto.username);
+      if (isEmailTaken) {
+        let oldUser = await this.userRepository.findOne({ where: { userName: dto.username } })
+        oldUser.status = dto.status;
+        if (oldUser.coutryId == dto.country.id && oldUser.userType.id == 1) {
+          await this.userRepository.save(oldUser);
+          await axios.post(MainMethURL + '/users/syncuser', dto, {
+            headers: getServiceAuthHeaders(),
+          });
+        }
+        return { status: 'updated' };
       }
-    }
-    else {
+      if (dto.status !== RecordStatus.Active) {
+        return { status: 'skipped' };
+      }
+
       let ut = new UserType();
       ut.id = 1
       const response = await axios.post(MainMethURL + '/institution/syncins', dto, {
@@ -153,13 +165,14 @@ export class LoginProfileController implements CrudController<LoginProfile> {
 
       dto.id = lp.id;
       dto.ins = response.data;
-      dto.userType=ut;
-      const user = await axios.post(MainMethURL + '/users/syncuser', dto, {
+      dto.userType = ut;
+      await axios.post(MainMethURL + '/users/syncuser', dto, {
         headers: getServiceAuthHeaders(),
       });
+      return { status: 'created' };
+    } catch (err) {
+      throw new InternalServerErrorException('Failed to sync user ' + dto?.username + ': ' + (err?.message ?? err));
     }
-
-
   }
 
   @Patch('update')
@@ -182,12 +195,32 @@ export class LoginProfileController implements CrudController<LoginProfile> {
   async remove(@Query('id') id: string): Promise<LoginProfile> {
     try {
       const lp = await this.service.findOne({ where: { id: id } });
-      lp.status = RecordStatus.Deleted; 
+      lp.status = RecordStatus.Deleted;
       delete lp.password;
       return await this.service.updateLoginProfile(lp);
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
+  }
+
+  @ServiceAuth()
+  @UseGuards(ServiceOnlyGuard)
+  @Post('admin-reset')
+  async adminReset(@Body() body: { userName: string }) {
+    const lp = await this.service.getByUserName(body.userName);
+    if (!lp || lp.status !== RecordStatus.Active) {
+      throw new HttpException('No active login found for this user', HttpStatus.NOT_FOUND);
+    }
+    await this.emailConfirmationService.sendTemporaryCode(lp.userName, 'Reset your TC toolkit password');
+    return { status: true };
+  }
+
+  @ServiceAuth()
+  @UseGuards(ServiceOnlyGuard)
+  @Delete('admin-delete')
+  async adminDelete(@Query('id') id: string) {
+    await this.service.hardDelete(id);
+    return { status: true };
   }
 
   @Patch('chage-state')

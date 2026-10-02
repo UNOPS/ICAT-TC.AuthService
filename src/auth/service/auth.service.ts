@@ -187,28 +187,30 @@ export class AuthService {
 
   async resetOwn(username: string, pass: string, code: string) {
     const profile = await this.loginProfileService.getByUserName(username);
+    if (!profile || !profile.salt || !code) {
+      return false;
+    }
     const hashPassword = await bcript.hash(code, profile.salt);
-    let fullUrl = process.env.MAIN_HOST + '/users/findUserByEmail/' + username;
-
-    const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
-    console.log(user)
 
     if (hashPassword == profile.password) {
       profile.password = pass;
       profile.profileState = ProfileStatus.Active;
       await this.loginProfileService.updateLoginProfile(profile);
+
+      let fullUrl = process.env.MAIN_HOST + '/users/findUserByEmail/' + username;
+      const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
+      const name = user ? user.firstName + " " + user.lastName : 'user';
       let url = `${this.configService.get('WEB_SERVER_LOGIN')}`;
       var template =
-        'Dear ' + user.firstName + " " + user.lastName + "," +
-        ' <br/><br/>Your username  : ' + username +
-        '<br/> Your login password : ' + pass +
-
+        'Dear ' + name + "," +
+        ' <br/><br/>The password for your TC toolkit account ' + username + ' has been set.' +
         ' <br/><br/>To log in to the system, please visit the following link : ' + ' <a href="' + url + '">' + 'System login.' + '</a>' +
+        '<br/><br/>If you did not make this change, please contact your TC toolkit administrator.' +
         '<br/><br/>Best regards, <br/>Software support team';
 
       this.emailService.send(
         username,
-        'Your credentials for TC toolkit',
+        'Your TC toolkit password has been set',
         template,
       );
       return true;

@@ -17,27 +17,32 @@ import { strictThrottle } from 'src/config/throttle.config';
 @ApiTags('email-confirmation')
 @Controller('email-confirmation')
 @UseInterceptors(ClassSerializerInterceptor)
-export class EmailConfirmationController  {
-    
+export class EmailConfirmationController {
+
     constructor(
         private readonly emailConfirmationService: EmailConfirmationService
     ) { }
 
-    
+
     @Public()
     @Throttle(strictThrottle)
     @Post('resend-confirmation-link')
-  async resendConfirmationLink(@Req() request: LoginProfile) {
-    await this.emailConfirmationService.resendConfirmationLink(request.id);
-  }
-  
+    async resendConfirmationLink(@Req() request: LoginProfile) {
+        await this.emailConfirmationService.resendConfirmationLink(request.id);
+    }
+
 
     @Public()
     @Get('confirm')
-    async confirm(@Query('token') token:string) {
-        const email = await this.emailConfirmationService.decodeConfirmationToken(token);
+    async confirm(@Query('token') token: string) {
+        let email: string;
+        try {
+            email = await this.emailConfirmationService.decodeConfirmationToken(token);
+        } catch (err) {
+            return this.emailConfirmationService.messagePage(err?.message);
+        }
         return await this.emailConfirmationService.confirmEmail(email);
     }
-    
+
 
 }

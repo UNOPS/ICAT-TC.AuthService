@@ -21,31 +21,53 @@ export class EmailConfirmationService {
     const payload: VerificationTokenPayload = { email };
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
-      expiresIn: process.env.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME,
+      expiresIn: process.env.INVITE_TOKEN_EXPIRATION_TIME || '7d',
     });
 
-    let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
-      const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
-
-
-    const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`; 
-    const text = 
-    'Dear user,'  +
-    `<br><br>Welcome to TC toolkit! To confirm your email address, <a href="${url}">click here</a>`+
-    '<br/><br/> If you did not request this confirmation, please ignore this email.'
-    +
-    '<br/><br/>Best regards,' +
-    '<br/>Software support team';
+    const url = process.env.EMAIL_CONFIRMATION_URL + `?token=${token}`;
+    const text =
+      'Dear user,' +
+      '<br><br>An account has been created for you in the TC toolkit.' +
+      `<br/>To confirm your email address and receive your login code, <a href="${url}">click here</a>.` +
+      '<br/>This link is valid for 7 days. If it has expired, please ask your TC toolkit administrator to send you a new invite.' +
+      '<br/><br/>If you were not expecting this email, please ignore it.'
+      +
+      '<br/><br/>Best regards,' +
+      '<br/>Software support team';
     return this.emailService.send(
       email,
-      'Confirm your email address',
+      'Your TC toolkit invitation',
       text,
     )
   }
+
+  public async sendTemporaryCode(email: string, subject: string) {
+    const salt = await bcript.genSalt(10);
+    const code = ('' + uuidv4()).substr(0, 6);
+    const password = await this.loginProfileService.hashPassword(code, salt);
+    await this.loginProfileService.markEmailAsConfirmed(email, salt.toString(), password);
+
+    const fullUrl = process.env.MAIN_HOST + '/users/findUserByEmail/' + email;
+    const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
+    const name = user ? user.firstName + ' ' + user.lastName : 'user';
+    const url = process.env.WEB_SERVER_RESET_PASSWORD + '?email=' + encodeURIComponent(email);
+
+    const template =
+      'Dear ' + name + ',' +
+      ' <br/><br/>Your username : ' + email +
+      ' <br/> Your code : ' + code +
+      ' <br/><br/>To set your password, please visit the following link and enter the code above : ' + ' <a href="' + url + '">' + 'Set password.' + '</a>' +
+      '<br/>' +
+      '<br/>Best regards,' +
+      '<br/>Software support team';
+
+    await this.emailService.send(email, subject, template);
+  }
+
   public async decodeConfirmationToken(token: string) {
     try {
       const payload = await this.jwtService.verify(token, {
-        secret:  process.env.JWT_VERIFICATION_TOKEN_SECRET,
+        secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
       });
 
       if (typeof payload === 'object' && 'email' in payload) {
@@ -54,17 +76,20 @@ export class EmailConfirmationService {
       throw new BadRequestException();
     } catch (error) {
       if (error?.name === 'TokenExpiredError') {
-        throw new BadRequestException('Email confirmation token expired');
+        throw new BadRequestException('This invitation link has expired. Please ask your TC toolkit administrator to send you a new invite.');
       }
-      throw new BadRequestException('Bad confirmation token');
+      throw new BadRequestException('This invitation link is not valid. Please ask your TC toolkit administrator to send you a new invite.');
     }
   }
   public async confirmEmail(email: string) {
-    
+
     const user = await this.loginProfileService.getByEmail(email);
+    if (!user) {
+      return this.messagePage('This account no longer exists. Please contact your TC toolkit administrator.');
+    }
     if (user.isEmailConfirmed) {
-      let url =process.env.WEB_SERVER_LOGIN; 
-      return  ` 
+      let url = process.env.WEB_SERVER_LOGIN;
+      return ` 
       <!DOCTYPE html>
         <html>
         <head>
@@ -84,32 +109,8 @@ export class EmailConfirmationService {
 
     }
     else {
-      let url = process.env.WEB_SERVER_RESET_PASSWORD; 
-      const salt = await bcript.genSalt(10);
-      let newUUID = uuidv4();
-      let newPassword = ('' + newUUID).substr(0, 6);
-      let sal = salt.toString();
-      let password =newPassword;
-      let fullUrl =process.env.MAIN_HOST+ '/users/findUserByEmail/' + email;
-      const user = await (await this.httpService.get(fullUrl, { headers: getServiceAuthHeaders() }).toPromise()).data;
-
-      password = await this.loginProfileService.hashPassword(password, salt);
-      await this.loginProfileService.markEmailAsConfirmed(email,sal, password);
-
-      var template =
-      'Dear ' + user.firstName + ' ' + user.lastName + ","+
-      ' <br/><br/>Your username :' + email +
-      ' <br/> Your code : ' +  newPassword +
-      ' <br/><br/>To reset your password, please visit the following link : ' + ' <a href="' + url + '">' + 'Reset password.' + '</a>' +
-      '<br/>' +
-      '<br/>Best regards,' +
-      '<br/>Software support team';
-
-      this.emailService.send(
-        email,
-        'Your credentials for TC toolkit',
-        template,
-      );
+      let url = process.env.WEB_SERVER_RESET_PASSWORD + '?email=' + encodeURIComponent(email);
+      await this.sendTemporaryCode(email, 'Your credentials for TC toolkit');
       return `<!DOCTYPE html>
       <html>
       <head>
@@ -123,17 +124,36 @@ export class EmailConfirmationService {
       </style>
       </head>
       <body>
-      <div><h2>Successfully verified email, <a style="margin top:50px" href="${url}">Please click here to login</a></h2></div>
+      <div><h2>Successfully verified email, <a style="margin top:50px" href="${url}">please click here to set your password</a></h2></div>
       <div></div>
-      <div><h3>We have sent an email with information to reset your password. Please check your email. </h3></div>
+      <div><h3>We have sent you an email with your login code. Please check your email.</h3></div>
       </body>
-      </html>` 
+      </html>`
     }
 
   }
+  public messagePage(message: string) {
+    return `<!DOCTYPE html>
+      <html>
+      <head>
+      <style>
+      body{
+        background-color:#e9ecef;
+      }
+      div {
+        margin: 120px;
+      }
+      </style>
+      </head>
+      <body>
+      <div><h2>${message}</h2></div>
+      </body>
+      </html>`;
+  }
+
   public async resendConfirmationLink(userId: any) {
 
-    const MainMethURL =  process.env.MAIN_SERVICE_URL ;
+    const MainMethURL = process.env.MAIN_SERVICE_URL;
     const user = await this.loginProfileService.getById(userId);
     if (user.isEmailConfirmed) {
       return ` 
